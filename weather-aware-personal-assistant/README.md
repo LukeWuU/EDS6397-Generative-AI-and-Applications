@@ -254,13 +254,3 @@ The corrective prompt pattern that worked best had this shape:
 - report exact files and scope confirmation
 
 It worked because it reduced ambiguity, established measurable acceptance criteria, prevented scope drift, made every phase independently reviewable, and produced a clear Git history with evidence of orchestration.
-
-## Assignment Rubric Alignment
-
-This project aligns with the Exceptional (Architect) rubric by demonstrating:
-
-- clean modular orchestration through `assistant_service.py`
-- a PRD focused on What and Why in `specs/PRD.md`
-- tests covering core behavior such as rain -> bus and online exclusion
-- clear steering and context-management evidence in `docs/steering-evidence.md`
-- deterministic, testable architecture with presentation separated from core logic
