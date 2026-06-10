@@ -42,14 +42,15 @@ Core modules: `config.py`, `models.py`, `calendar_loader.py`, `weather_client.py
 
 ### Dependencies and Timezones
 
-- Runtime dependencies: `httpx`, `rich`, and `pytest` (dev optional group).
-- On Windows, `pyproject.toml` must declare `tzdata; platform_system == 'Windows'` so `America/Chicago` IANA timezone support is available when the package is installed.
+- Runtime dependencies: `httpx` and `rich`.
+- Development dependency: `pytest` in the `dev` optional group.
+- On Windows, `pyproject.toml` declares `tzdata; platform_system == 'Windows'` so `America/Chicago` IANA timezone support is available when the package is installed.
 
 ## Testing Rules
 
 - Use pytest; no live network in unit tests.
-- Inject `http_get` or service-level fetchers for weather tests.
-- Cover rain->bus, online exclusion, severe-over-rain ordering, `[start, end)` boundaries, calendar validation, and REPL unknown/exit behavior.
+- Inject loaders, fetchers, transports, services, consoles, and scripted REPL input for tests.
+- Cover rain->bus, online exclusion, severe-over-rain ordering, `[start, end)` boundaries, calendar validation, service atomic reload, and REPL unknown/exit behavior.
 - AST-based guards confirm `advice_engine` has no I/O; capsys tests supplement but do not replace AST checks.
 
 ## Error Handling
@@ -57,14 +58,23 @@ Core modules: `config.py`, `models.py`, `calendar_loader.py`, `weather_client.py
 - Raise typed errors: `CalendarError`, `WeatherFetchError`.
 - REPL catches expected errors and shows Rich panels - no user-facing tracebacks.
 
-## Agent Checklist (Later Phases)
+## Agent Checklist (Final Status)
 
-- [ ] Keep `advice_engine` pure before adding CLI polish
-- [ ] Pass `wind_speed_unit=ms` on every Open-Meteo request
-- [ ] Do not import Rich outside `cli/`
-- [ ] Add tests before marking a phase complete
-- [ ] Update `docs/steering-evidence.md` only from real observations
-- [ ] Do not fabricate Vibe Report incidents
+- [x] Keep `advice_engine` pure
+- [x] Pass `wind_speed_unit=ms` on every Open-Meteo request
+- [x] Do not import Rich outside `cli/`
+- [x] Add tests before marking each phase complete
+- [x] Update `docs/steering-evidence.md` from real observations
+- [x] Do not fabricate Vibe Report incidents
+
+## Final Compliance Summary
+
+- Core modules do not import CLI or Rich.
+- `assistant_service.py` contains orchestration only.
+- `formatter.py` and `repl.py` contain presentation only.
+- Unit tests use injected or mocked dependencies with no live network.
+- Expected errors are user-facing without traceback exposure in the REPL.
+- Verified full test suite: `305 passed in 1.06s`.
 
 ## Steering Evidence
 

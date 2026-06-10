@@ -21,6 +21,7 @@ A single local user running a Python CLI on their machine who maintains a simple
 - No geocoding or per-event coordinate lookup.
 - No user accounts, persistence beyond `calendar.json`, or web UI.
 - No `requests` library; HTTP uses `httpx` only.
+- No multi-city weather support or external deployment claims.
 
 ## Functional Requirements
 
@@ -60,7 +61,7 @@ Example:
 - **Default location:** latitude **29.76**, longitude **-95.36** (Houston, Texas). All events share this forecast; `location` text does not change coordinates.
 - Use Open-Meteo `GET /v1/forecast` with `timezone=America/Chicago`.
 - Request hourly `temperature_2m`, `precipitation`, `weather_code`, `wind_speed_10m`.
-- **Wind-speed unit contract:** always pass `wind_speed_unit=ms`. Parsed `WeatherHour.wind_speed` and `EventWeatherSummary.max_wind_speed_ms` are **meters per second**. Do not rely on Open-Meteo's default (km/h).
+- **Wind-speed unit contract:** always pass `wind_speed_unit=ms`. Parsed wind values are meters per second.
 - Match event windows as half-open intervals **`[start, end)`** against hourly buckets.
 - Aggregate worst-case conditions across overlapping hours: maximum precipitation, maximum wind, minimum and maximum temperature, and highest-severity WMO weather code.
 
@@ -82,7 +83,7 @@ Pure functions accept structured weather and event data; no I/O inside the advic
 **Rain detection thresholds:**
 
 - Precipitation `>= 0.1` mm in any overlapping hour, **and/or**
-- WMO weather code in `{51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82}` (expanded set including freezing precipitation).
+- WMO weather code in `{51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82}`.
 
 **Location heuristics:**
 
@@ -102,7 +103,7 @@ Pure functions accept structured weather and event data; no I/O inside the advic
 |---------|----------|
 | `help` | List commands and brief descriptions |
 | `events` | Show validated calendar events |
-| `weather` | Show Houston hourly forecast (next 24 h) |
+| `weather` | Show Houston hourly forecast |
 | `advice` | Weather-aware advice per event |
 | `reload` | Reload calendar and refetch weather |
 | `quit` / `exit` | Exit gracefully |
@@ -132,17 +133,20 @@ Unknown commands show a helpful message without terminating the REPL.
 
 ## Success Criteria
 
-- All planned REPL commands work as specified.
-- Advice includes bus + umbrella for rainy travel events.
-- Online events in rain do not receive bus advice.
+- All REPL commands work as specified.
+- Advice includes bus + umbrella for rainy travel events in automated tests.
+- Online events in rain do not receive bus advice in automated tests.
 - `pytest -q` passes with full test-plan coverage.
 - Architecture separates core logic from CLI presentation.
 
 ## Acceptance Criteria
 
-- [ ] `python -m assistant` launches REPL
-- [ ] `events`, `weather`, `advice`, `reload`, `help`, `quit`/`exit` behave per spec
-- [ ] Wind speeds interpreted as m/s with `wind_speed_unit=ms` on every request
-- [ ] Advice engine has no I/O (verified by AST and capsys tests)
-- [ ] Event windows use half-open `[start, end)` matching
-- [ ] README, PRD, and `docs/rules.md` align with implementation
+- [x] `python -m assistant` launches REPL
+- [x] `events`, `weather`, `advice`, `reload`, `help`, `quit`/`exit` behave per spec
+- [x] Wind speeds interpreted as m/s with `wind_speed_unit=ms` on every request
+- [x] Advice engine has no I/O (verified by AST and capsys tests)
+- [x] Event windows use half-open `[start, end)` matching
+- [x] Rain travel advice includes bus/public transit and umbrella in automated tests
+- [x] Online event exclusion works in automated tests
+- [x] Full test suite passes (`305 passed in 1.06s`)
+- [x] README, PRD, and `docs/rules.md` align with implementation

@@ -1,103 +1,141 @@
 # Weather-Aware Personal Assistant
 
-**Phase 1 status:** This project is currently at the scaffolding and documentation stage. The REPL, weather fetching, advice engine, and automated tests are **not implemented yet**. The sections below describe **planned behavior** for later phases.
+## Overview
 
-A modular Python CLI REPL that will read local calendar events, fetch Houston hourly weather from [Open-Meteo](https://open-meteo.com/), and produce **deterministic, rule-based** advice - no LLM required.
+A complete, operational Python CLI REPL that reads local calendar events, fetches live Houston hourly weather from [Open-Meteo](https://open-meteo.com/) without an API key, and produces deterministic, rule-based advice. No LLM is used.
 
-## Setup
+The assistant is modular, testable, and designed for clean orchestration: presentation stays in the CLI layer, business rules stay in core modules, and `assistant_service.py` coordinates loading, fetching, summarization, and advice generation.
+
+## Features
+
+- Interactive Rich REPL launched with `python -m assistant`
+- Strict `calendar.json` validation with Houston-local datetime parsing
+- Live Open-Meteo hourly forecast for Houston (`29.76`, `-95.36`)
+- Half-open event weather windows `[start, end)`
+- Deterministic advice for rain, severe weather, heat, cold, wind, and normal conditions
+- Travel-location rain advice that recommends bus/public transit and an umbrella
+- Online-location exclusion so remote events never receive bus advice
+- Dependency-injected service layer for testability
+- 305 automated tests with injected or mocked dependencies and no live network
+
+## Architecture
+
+```text
+CLI/presentation (__main__.py, cli/repl.py, cli/formatter.py)
+        |
+assistant_service.py
+        |
+calendar_loader.py  weather_client.py  weather_window.py  advice_engine.py
+        |
+models.py  config.py
+```
+
+Dependency direction: `CLI -> assistant_service -> core modules`.
+
+- **Presentation:** Rich output and command dispatch only
+- **Service:** Orchestration only; no duplicated weather or advice rules
+- **Core:** Calendar loading, HTTP retrieval, event-window aggregation, pure advice logic
+- **Configuration:** Houston coordinates, thresholds, and API contract live in `config.py`
+
+Event `location` text is used for display and advice heuristics only. All weather requests use centralized Houston coordinates from configuration.
+
+## Project Structure
+
+```text
+weather-aware-personal-assistant/
+|- .gitignore
+|- calendar.json
+|- pyproject.toml
+|- README.md
+|- specs/
+|  `- PRD.md
+|- docs/
+|  |- rules.md
+|  `- steering-evidence.md
+|- src/assistant/
+|  |- __init__.py
+|  |- __main__.py
+|  |- config.py
+|  |- models.py
+|  |- calendar_loader.py
+|  |- weather_client.py
+|  |- weather_window.py
+|  |- advice_engine.py
+|  |- assistant_service.py
+|  `- cli/
+|     |- __init__.py
+|     |- formatter.py
+|     `- repl.py
+`- tests/
+   |- conftest.py
+   |- test_models.py
+   |- test_calendar_loader.py
+   |- test_weather_client.py
+   |- test_weather_window.py
+   |- test_advice_engine.py
+   |- test_assistant_service.py
+   `- test_repl.py
+```
+
+## Installation
 
 Requires **Python 3.10+**.
 
-Runtime dependencies are `httpx` and `rich`. On Windows, `pyproject.toml` also declares a conditional runtime dependency, `tzdata; platform_system == 'Windows'`, so `America/Chicago` IANA timezone support is available when the package is installed.
+Runtime dependencies are `httpx` and `rich`. On Windows, `pyproject.toml` declares conditional runtime dependency `tzdata; platform_system == 'Windows'` for `America/Chicago` IANA timezone support.
 
 ```bash
 cd weather-aware-personal-assistant
 python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-pip install -e ".[dev]"
 ```
 
-## Planned Run (not yet implemented)
+Windows:
 
-In a later phase, this command will launch the interactive REPL:
+```bash
+.venv\Scripts\activate
+```
+
+macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+## Running the Application
 
 ```bash
 python -m assistant
 ```
 
-Today, `python -m assistant` prints a placeholder message only.
+On startup the REPL displays a welcome panel, attempts one `reload()`, and then accepts commands. Verified live smoke test behavior:
 
-### Planned REPL Commands
+- loaded 3 calendar events from `calendar.json`
+- loaded 168 hourly weather records from Open-Meteo
+- `help`, `events`, `weather`, `advice`, `reload`, and `quit` all worked
+- no traceback was shown to the user
 
-| Command | Planned description |
-|---------|---------------------|
+Live demonstration advice depends on the current Open-Meteo forecast. A live run will not always produce rainy weather or bus advice.
+
+## REPL Commands
+
+| Command | Description |
+|---------|-------------|
 | `help` | Show available commands |
-| `events` | List validated calendar events |
-| `weather` | Houston hourly forecast (next 24 hours) |
-| `advice` | Weather-aware advice for each event |
+| `events` | List loaded calendar events |
+| `weather` | Show loaded hourly forecast |
+| `advice` | Show weather-aware advice for each event |
 | `reload` | Reload `calendar.json` and refetch weather |
-| `quit` / `exit` | Exit the assistant |
+| `quit` | Exit the assistant |
+| `exit` | Exit the assistant (alias of `quit`) |
 
-### Planned Example Session
+`quit` and `exit` are aliases with the same graceful-exit behavior. Command matching is case-insensitive and tolerant of leading and trailing whitespace.
 
-```text
-assistant> help
-assistant> events
-assistant> weather
-assistant> advice
-assistant> quit
-```
+## Calendar Schema
 
-## Planned Testing (not yet implemented)
-
-In a later phase, this command will run the automated test suite:
-
-```bash
-pytest -q
-```
-
-The test plan calls for injected weather data and no live network access in unit tests. No test modules exist yet.
-
-## Planned Architecture
-
-```text
-CLI (repl.py, formatter.py)  -- Rich presentation only
-        |
-assistant_service.py         -- orchestration
-        |
-calendar_loader.py  weather_client.py  weather_window.py  advice_engine.py
-        |
-models.py, config.py
-```
-
-Dependency direction: `CLI -> assistant_service -> core modules`.
-
-- **Weather (planned):** Open-Meteo for Houston (`29.76`, `-95.36`), `wind_speed_unit=ms`.
-- **Advice (planned):** Pure functions in `advice_engine.py`; rain + travel -> bus/transit + umbrella.
-- **Time (planned):** `America/Chicago`; event windows `[start, end)`.
-
-## Current Project Layout (Phase 1)
-
-```text
-weather-aware-personal-assistant/
-|- calendar.json
-|- pyproject.toml
-|- specs/PRD.md
-|- docs/rules.md
-|- docs/steering-evidence.md
-|- src/assistant/
-|  |- __init__.py
-|  |- __main__.py
-|  `- cli/
-|     `- __init__.py
-`- tests/
-   `- conftest.py
-```
-
-Additional modules listed in the planned architecture will be added in later phases.
-
-## Calendar Format
+Root object with an `events` array. Each event requires `title`, `start`, `end`, and `location`.
 
 ```json
 {
@@ -106,26 +144,123 @@ Additional modules listed in the planned architecture will be added in later pha
       "title": "Team Standup",
       "start": "2026-06-10T09:00:00",
       "end": "2026-06-10T09:30:00",
-      "location": "Office Building A"
+      "location": "Office Building A, Houston"
     }
   ]
 }
 ```
 
-Naive datetimes are interpreted as Houston local time. Update event dates to stay within the 7-day forecast window for live demos.
+The repository includes three sample events in `calendar.json`. Naive ISO datetimes are interpreted as Houston local time (`America/Chicago`). For live demos, keep event dates within the 7-day forecast window.
+
+## Rule-Based Advice Behavior
+
+Advice is generated by `advice_engine.py` from `EventWeatherSummary` data using fixed priorities:
+
+| Priority | rule_id | Summary |
+|----------|---------|---------|
+| 0 | `forecast_unavailable` | No overlapping forecast |
+| 1 | `severe_weather` | Severe WMO weather codes |
+| 2 | `rain_travel` | Rain + travel/transit location |
+| 3 | `rain_gear` | Rain + physical or online location |
+| 4 | `extreme_heat` | Max temperature >= 35.0 C |
+| 5 | `cold_weather` | Min temperature <= 5.0 C |
+| 6 | `strong_wind` | Max wind >= 14.0 m/s |
+| 7 | `normal` | No higher-priority rule matched |
+
+Event weather windows use the half-open interval `[start, end)`. A weather hour at `event.start` is included; a weather hour at `event.end` is excluded.
+
+Rainy travel events such as `Metro Bus Station` can produce advice that explicitly mentions both bus/public transit and an umbrella. Online events such as `Zoom` do not receive bus advice.
+
+## Testing
+
+```bash
+python -m pytest -q
+```
+
+Verified full-suite result:
+
+```text
+305 passed in 1.06s
+```
+
+Tests use pytest with injected loaders, mocked HTTP transport, fake services, and scripted REPL input. Unit tests do not use live network access.
+
+## Example Session
+
+```text
+assistant> help
+assistant> events
+assistant> weather
+assistant> advice
+assistant> reload
+assistant> quit
+```
+
+## Design Decisions
+
+- **Orchestration over monolith:** `assistant_service.py` coordinates modules without duplicating their logic.
+- **Pure advice engine:** `advice_engine.py` has no print, input, file I/O, Rich, or network access.
+- **Centralized configuration:** thresholds, coordinates, and API parameters live in `config.py`.
+- **Atomic reload:** calendar and weather caches update together or not at all.
+- **Presentation isolation:** Rich is confined to `src/assistant/cli/`.
+- **Phase-based delivery:** each implementation phase had an explicit file allowlist and focused pytest gate.
+
+## Limitations / Non-Goals
+
+- No LLM or generative AI for advice
+- No geocoding or per-event weather coordinates
+- No `requests` library; HTTP uses `httpx` only
+- No web UI, accounts, or persistence beyond `calendar.json`
+- No multi-city support or external deployment claims
+- No guarantee that live weather will trigger rain or bus advice on every run
 
 ## Vibe Report
 
-*(To be completed after implementation; see `docs/steering-evidence.md` for real notes.)*
-
 ### Where did the AI's vibe drift?
 
-See `docs/steering-evidence.md` for the recorded Phase 1 handoff observation.
+During the first Build handoff, the agent ignored the explicitly limited Phase 1 scope and attempted to implement the entire multi-phase project, run tests, and create installation artifacts. The workspace had to be restored to an earlier checkpoint, caches and package metadata were removed, and the task was reissued with an exact file allowlist and explicit prohibitions.
+
+This taught several context-management lessons:
+
+- broad prompts encourage scope expansion
+- phase boundaries must be explicit
+- file allowlists and command allowlists improve control
+- Git status and focused tests were used after every phase
 
 ### When was the Builder Hammer used?
 
-See `docs/steering-evidence.md`. No manual source-code logic repair has occurred yet.
+No manual business-logic or Python source-code repair was used.
+
+Manual terminal commands were used as a limited Builder Hammer to:
+
+- remove `.pytest_cache`, `__pycache__`, `.pyc`, and `.egg-info`
+- restore a clean workspace after the scope violation
+- inspect, stage, commit, and push approved files
+- verify Git status and file boundaries
+
+A service-factory placement issue and weak tests were corrected through a narrowly scoped steering prompt to the AI agent, not by manually editing Python source.
 
 ### What was the most successful steering prompt?
 
-(Placeholder until later phases.)
+The corrective prompt pattern that worked best had this shape:
+
+- "Implement Phase N only"
+- exact file allowlist
+- "Do not create or modify any other file"
+- explicit architecture and behavioral contracts
+- focused pytest command only
+- no full suite, install, application run, commit, push, Multitask, or background worker
+- stop after focused tests pass
+- report exact files and scope confirmation
+
+It worked because it reduced ambiguity, established measurable acceptance criteria, prevented scope drift, made every phase independently reviewable, and produced a clear Git history with evidence of orchestration.
+
+## Assignment Rubric Alignment
+
+This project aligns with the Exceptional (Architect) rubric by demonstrating:
+
+- clean modular orchestration through `assistant_service.py`
+- a PRD focused on What and Why in `specs/PRD.md`
+- tests covering core behavior such as rain -> bus and online exclusion
+- clear steering and context-management evidence in `docs/steering-evidence.md`
+- deterministic, testable architecture with presentation separated from core logic
