@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "title": "Team Standup",
+      "start": "2026-06-10T09:00:00",
+      "end": "2026-06-10T09:30:00",
+      "location": "Office Building A, Houston"
+    },
+    {
+      "title": "Project Sync",
+      "start": "2026-06-11T14:00:00",
+      "end": "2026-06-11T15:00:00",
+      "location": "Zoom"
+    },
+    {
+      "title": "Downtown Commute",
+      "start": "2026-06-12T07:30:00",
+      "end": "2026-06-12T08:15:00",
+      "location": "Metro Bus to Downtown Houston"
+    }
+  ]
+}
