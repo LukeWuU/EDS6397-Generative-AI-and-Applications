@@ -1,5 +1,8 @@
+from assistant.cli.repl import run_repl
+
+
 def main() -> None:
-    print("Weather-aware personal assistant implementation is pending.")
+    run_repl()
 
 
 if __name__ == "__main__":
