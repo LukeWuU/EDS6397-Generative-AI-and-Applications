@@ -1,1 +1,1 @@
-print("Hello, EDS 6397!")
+print("Hello, Everyone!")
