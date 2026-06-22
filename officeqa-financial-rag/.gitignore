@@ -1,0 +1,18 @@
+﻿.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+
+# Downloaded or generated dataset files
+data/raw/
+data/processed/
+
+# Cloned external OfficeQA repository
+officeqa/
+
+# Local backup
+README_broken_backup.md
+
+# Question-level detail outputs may contain benchmark questions/answers
+results/*_details.csv

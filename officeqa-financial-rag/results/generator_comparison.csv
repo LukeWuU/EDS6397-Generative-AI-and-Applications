@@ -1,0 +1,3 @@
+system,total_questions,groundedness,factual_accuracy,hallucination_rate,abstention_rate
+Baseline RAG,22.0,0.3181818181818182,0.3181818181818182,0.0,0.6818181818181818
+Engineered RAG,22.0,0.7727272727272727,0.7727272727272727,0.0,0.22727272727272727
