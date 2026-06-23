@@ -1,107 +1,231 @@
-﻿# OfficeQA Financial RAG Challenge
+﻿# OfficeQA Financial RAG Comparison
 
 This project builds and evaluates a Retrieval-Augmented Generation (RAG) pipeline using the Databricks OfficeQA dataset.
 
-The main goal is to compare a simple Baseline RAG system with an Engineered RAG system on real-world financial documents from U.S. Treasury Bulletins.
+The main goal is to compare a simple Baseline RAG system with an Engineered RAG system on financial question answering over Treasury Bulletin documents.
 
-## Dataset
+The project first uses the transformed TXT files as the main document source. As an optional extension, it also tests parsed JSON files to compare whether structured document representation improves retrieval and RAG performance.
 
-* Dataset: Databricks OfficeQA
-* Answer key: `officeqa_pro.csv`
-* Source document type used for chunking and embedding: transformed `.txt` files
-* Source corpus: Treasury Bulletin transformed text files
-* Final evaluation year range: 2010-2025
-* Evaluation questions: 22 OfficeQA Pro questions fully answerable from the selected source files
+## Project Summary
 
-I first audited the strict 2022-2025 recent-year subset. That subset produced only 2 fully answerable OfficeQA Pro questions. To create a more meaningful comparison between Baseline RAG and Engineered RAG, I expanded the evaluation window to 2010-2025. This still includes recent years while producing a more stable evaluation set.
+Dataset:
 
-## Why TXT Files
+```text
+Databricks OfficeQA
+```
 
-I used the transformed `.txt` files because they are already parsed from the original Treasury Bulletin documents and are efficient for chunking, embedding, and retrieval. This matches the assignment goal of working with real-world financial documents while keeping the pipeline reproducible.
+Main answer key:
 
-As a future extension, JSON files could be tested after the TXT pipeline to compare whether a more structured document representation improves retrieval and answer quality.
+```text
+officeqa_pro.csv
+```
+
+Main document source:
+
+```text
+treasury_bulletins_transformed/txts/
+```
+
+Optional extension document source:
+
+```text
+treasury_bulletins_parsed/jsons/
+```
+
+Evaluation range:
+
+```text
+2010-2025
+```
+
+Number of evaluation questions:
+
+```text
+22
+```
+
+Main task:
+
+```text
+Compare Baseline RAG vs Engineered RAG
+```
+
+Optional extension:
+
+```text
+Compare Transformed TXT vs Parsed JSON
+```
 
 ## Project Structure
 
 ```text
 officeqa-financial-rag/
-  data/
-    raw/                  # ignored by git; downloaded from Hugging Face
-    processed/            # filtered answer key and generated chunks
-  docs/                   # markdown reports and comparison tables
-  results/                # metric outputs
-  scripts/                # runnable pipeline scripts
-  src/
-    officeqa_rag/         # reusable RAG modules
-  tests/                  # reserved for tests
-  README.md
-  .gitignore
+├── README.md
+├── data/
+│   └── .gitkeep
+├── docs/
+│   ├── final_rag_comparison.md
+│   ├── generator_comparison.md
+│   ├── json_generator_comparison.md
+│   ├── retriever_comparison.md
+│   └── txt_json_rag_comparison.md
+├── results/
+│   ├── baseline_retriever_summary.csv
+│   ├── engineered_retriever_summary.csv
+│   ├── final_rag_comparison.csv
+│   ├── generator_comparison.csv
+│   ├── json_baseline_retriever_summary.csv
+│   ├── json_engineered_retriever_summary.csv
+│   ├── json_generator_comparison.csv
+│   ├── retriever_comparison.csv
+│   └── txt_json_rag_comparison.csv
+├── scripts/
+│   ├── audit_answer_key.py
+│   ├── build_chunks.py
+│   ├── build_json_chunks.py
+│   ├── compare_retrievers.py
+│   ├── download_data.py
+│   ├── download_json_data.py
+│   ├── evaluate_baseline_retriever.py
+│   ├── evaluate_engineered_retriever.py
+│   ├── evaluate_generators.py
+│   ├── evaluate_json_generators.py
+│   ├── evaluate_json_retrievers.py
+│   ├── inspect_json_structure.py
+│   ├── make_final_results.py
+│   ├── make_txt_json_comparison.py
+│   └── prepare_data.py
+└── src/
+    └── officeqa_rag/
+        ├── __init__.py
+        ├── data_loader.py
+        ├── engineered_retriever.py
+        ├── generator.py
+        ├── json_loader.py
+        ├── metadata.py
+        ├── metrics.py
+        └── retriever.py
 ```
 
-## Technical Stack
+## Data Selection
 
-### Retrieval Index
+The original OfficeQA dataset contains many Treasury Bulletin documents across a long time range. For this project, I used the 2010-2025 range because it provides enough valid evaluation examples while keeping the experiment manageable.
 
-This project uses a local TF-IDF matrix from `scikit-learn` as the vector search index.
+The selected answer key contains 22 questions where the required source files are available in the downloaded Treasury Bulletin documents.
 
-I used TF-IDF instead of FAISS or ChromaDB because it is lightweight, reproducible, and stable on Windows with Python 3.13. The project still follows the RAG retrieval pattern: documents are chunked, embedded into vectors, searched by query similarity, and evaluated at K=5.
-
-### Metadata
-
-Each chunk stores the following metadata:
-
-* `file_name`
-* `year`
-* `month`
-* `chunk_index`
-
-The year and month are parsed from Treasury Bulletin file names such as:
+The processed evaluation file is generated as:
 
 ```text
-treasury_bulletin_2022_12.txt
+data/processed/officeqa_eval_2010_2025.csv
 ```
 
-### Chunking Strategy
+The downloaded raw files and processed chunk files are not committed to GitHub because they can be regenerated by the scripts.
 
-Baseline chunking uses:
+## Main TXT-Based RAG Pipeline
 
-* 350 words per chunk
-* 80-word overlap
-* fixed sliding window
-* metadata attached to every chunk
+The main pipeline uses the transformed TXT Treasury Bulletin files.
 
-The baseline chunk file is saved as:
+Pipeline:
+
+```text
+Transformed TXT files
+→ TXT chunking
+→ TF-IDF retrieval
+→ Baseline RAG
+→ Engineered RAG
+→ Retriever evaluation
+→ Conservative generator evaluation
+→ Final comparison
+```
+
+## TXT Chunking Strategy
+
+The TXT pipeline uses word-based chunking.
+
+Chunk settings:
+
+```text
+350 words per chunk
+80-word overlap
+```
+
+Each chunk keeps the following metadata:
+
+```text
+file_name
+year
+month
+chunk_index
+text
+```
+
+The TXT chunks are generated as:
 
 ```text
 data/processed/chunks_baseline_2010_2025.csv
 ```
 
-## Systems Compared
+## Baseline RAG
 
-### Baseline RAG
+The Baseline RAG system uses a simple retrieval setup.
 
-The Baseline RAG system uses:
+Retriever:
 
-* TF-IDF unigram retrieval
-* fixed 350-word chunks with 80-word overlap
-* no metadata filtering
-* Top-5 retrieval
+```text
+TF-IDF unigram search
+```
 
-### Engineered RAG
+Metadata filter:
 
-The Engineered RAG system improves the baseline with:
+```text
+No metadata filter
+```
 
-* TF-IDF unigram + bigram retrieval
-* soft Year metadata boost
-* soft Month metadata boost
-* file-level diversification to avoid returning too many chunks from the same file
-* Top-5 retrieval
+Purpose:
 
-The engineered system does not use the answer key during retrieval. It only infers year and month hints from the question text.
+```text
+Provide a simple baseline for comparison.
+```
 
-## Metrics
+## Engineered RAG
 
-All retrieval metrics are evaluated at K=5.
+The Engineered RAG system improves retrieval by adding metadata-aware logic.
+
+Retriever:
+
+```text
+TF-IDF unigram + bigram search
+```
+
+Engineering improvements:
+
+```text
+Year metadata inference
+Month metadata inference
+Soft Year/Month score boosting
+File-level diversification
+Larger candidate pool
+```
+
+Purpose:
+
+```text
+Improve retrieval quality by using document metadata and better matching.
+```
+
+## Conservative Generator
+
+This project uses a conservative evidence-first generator evaluator.
+
+The generator only answers when the retrieved Top-5 files include at least one gold source file. If the correct source file is not retrieved, the generator returns:
+
+```text
+INSUFFICIENT_CONTEXT
+```
+
+This makes the system avoid unsupported answers and makes retrieval quality directly visible.
+
+## Evaluation Metrics
 
 ### Hit Rate@5
 
@@ -110,44 +234,42 @@ Hit Rate@5 measures whether at least one correct source file appears in the Top-
 Formula:
 
 ```text
-Hit Rate@5 = number of questions with at least one relevant file in Top-5 / total number of questions
+Hit Rate@5 = questions with at least one correct source in Top-5 / total questions
 ```
 
 ### MRR
 
-Mean Reciprocal Rank measures how highly the first relevant result appears.
+MRR means Mean Reciprocal Rank. It measures how highly the first correct source file is ranked.
 
 Formula:
 
 ```text
-MRR = average of 1 / rank of first relevant result
+MRR = average of 1 / rank of first correct source
 ```
-
-If no relevant file appears in Top-5, the reciprocal rank is 0.
 
 ### Recall@5
 
-Recall@5 measures the fraction of gold source files retrieved in the Top-5 results.
+Recall@5 measures how many gold source files are retrieved within Top-5.
 
 Formula:
 
 ```text
-Recall@5 = number of relevant source files retrieved in Top-5 / total relevant source files
+Recall@5 = retrieved relevant source files in Top-5 / total relevant source files
 ```
 
 ### Groundedness
 
-Groundedness measures whether the generated answer is supported by retrieved source evidence.
+Groundedness measures whether the generated answer is supported by retrieved evidence.
 
 Formula:
 
 ```text
-Groundedness = grounded answers / total questions
+Groundedness = supported generated answers / total questions
 ```
 
 ### Factual Accuracy
 
-Factual Accuracy measures whether the generated answer matches the OfficeQA gold answer.
+Factual Accuracy measures whether the generated answer matches the gold answer.
 
 Formula:
 
@@ -165,16 +287,24 @@ Formula:
 Hallucination Rate = unsupported generated answers / total questions
 ```
 
-This project uses a conservative evidence-first generator. It only answers when the Top-5 retrieved files include at least one gold source file. Otherwise, it returns `INSUFFICIENT_CONTEXT`. This keeps hallucination low and makes retrieval quality directly visible.
+### Abstention Rate
 
-## Final Results
+Abstention Rate measures how often the system refuses to answer because the correct evidence was not retrieved.
+
+Formula:
+
+```text
+Abstention Rate = insufficient-context answers / total questions
+```
+
+## TXT Final Results
 
 | System         | Questions | Hit Rate@5 |   MRR | Recall@5 | Groundedness | Factual Accuracy | Hallucination Rate | Abstention Rate |
 | -------------- | --------: | ---------: | ----: | -------: | -----------: | ---------------: | -----------------: | --------------: |
 | Baseline RAG   |        22 |      0.318 | 0.183 |    0.265 |        0.318 |            0.318 |              0.000 |           0.682 |
 | Engineered RAG |        22 |      0.773 | 0.670 |    0.606 |        0.773 |            0.773 |              0.000 |           0.227 |
 
-## Improvement from Baseline to Engineered RAG
+## Improvement from TXT Baseline to TXT Engineered RAG
 
 | Metric             | Improvement |
 | ------------------ | ----------: |
@@ -186,15 +316,134 @@ This project uses a conservative evidence-first generator. It only answers when 
 | Hallucination Rate |      +0.000 |
 | Abstention Rate    |      -0.455 |
 
-## Interpretation
+## TXT Result Interpretation
 
-The Engineered RAG system substantially outperformed the Baseline RAG system. Hit Rate@5 increased from 31.8% to 77.3%, and MRR increased from 0.183 to 0.670. This shows that metadata-aware retrieval and bigram matching helped the system find the correct Treasury Bulletin files more often and rank them higher.
+The Engineered RAG system substantially outperformed the Baseline RAG system. Hit Rate@5 increased from 31.8% to 77.3%, and MRR increased from 0.183 to 0.670.
 
-The generator metrics improved for the same reason. Since the conservative generator only answers when retrieved evidence contains a correct source file, stronger retrieval directly improved groundedness and factual accuracy. Hallucination Rate remained 0.000 because the system abstained instead of guessing when evidence was insufficient.
+This shows that metadata-aware retrieval and bigram matching helped the system find the correct Treasury Bulletin files more often and rank them higher.
+
+The generator metrics improved for the same reason. Since the conservative generator only answers when retrieved evidence contains a correct source file, stronger retrieval directly improved groundedness and factual accuracy.
+
+Hallucination Rate remained 0.000 because the system abstained instead of guessing when evidence was insufficient.
+
+---
+
+## Optional JSON Extension Experiment
+
+After completing the main TXT-based RAG pipeline, I also added an optional JSON-based extension using the parsed JSON files from OfficeQA.
+
+This extension tests whether `Parsed JSON` can improve RAG performance compared with `Transformed TXT`.
+
+## JSON Data Source
+
+The JSON files are downloaded from:
+
+```text
+treasury_bulletins_parsed/jsons/treasury_bulletin_YYYY_MM.json
+```
+
+Each parsed JSON file contains:
+
+```text
+document
+  elements
+  pages
+```
+
+The `elements` list includes structured fields such as:
+
+```text
+bbox
+content
+description
+id
+type
+```
+
+Common element types include:
+
+```text
+text
+section_header
+table
+title
+caption
+footnote
+page_header
+page_footer
+page_number
+figure
+```
+
+## JSON Chunking Strategy
+
+The JSON extension uses JSON-aware chunks instead of plain TXT chunks.
+
+Each chunk keeps:
+
+```text
+file_name
+year
+month
+chunk_index
+start_element_id
+end_element_id
+page_ids
+element_types
+text
+```
+
+The JSON chunking strategy is:
+
+```text
+Sort elements by file, page_id, and element_id
+Keep only elements with useful content
+Group nearby elements into about 350-word chunks
+Limit each chunk to at most 2 pages
+Use 3-element overlap
+Preserve element type and page metadata inside the chunk text
+```
+
+This creates page-aware chunks that avoid crossing too many pages.
+
+## JSON Retriever Results
+
+| System                    | Questions | Hit Rate@5 |   MRR | Recall@5 |
+| ------------------------- | --------: | ---------: | ----: | -------: |
+| JSON Baseline Retriever   |        22 |      0.227 | 0.134 |    0.136 |
+| JSON Engineered Retriever |        22 |      0.864 | 0.495 |    0.674 |
+
+## JSON Generator Results
+
+| System              | Questions | Groundedness | Factual Accuracy | Hallucination Rate | Abstention Rate |
+| ------------------- | --------: | -----------: | ---------------: | -----------------: | --------------: |
+| JSON Baseline RAG   |        22 |        0.227 |            0.227 |              0.000 |           0.773 |
+| JSON Engineered RAG |        22 |        0.864 |            0.864 |              0.000 |           0.136 |
+
+## TXT vs JSON Final Results
+
+| System              | Data Format     | Questions | Hit Rate@5 |   MRR | Recall@5 | Groundedness | Factual Accuracy | Hallucination Rate | Abstention Rate |
+| ------------------- | --------------- | --------: | ---------: | ----: | -------: | -----------: | ---------------: | -----------------: | --------------: |
+| TXT Baseline RAG    | Transformed TXT |        22 |      0.318 | 0.183 |    0.265 |        0.318 |            0.318 |              0.000 |           0.682 |
+| TXT Engineered RAG  | Transformed TXT |        22 |      0.773 | 0.670 |    0.606 |        0.773 |            0.773 |              0.000 |           0.227 |
+| JSON Baseline RAG   | Parsed JSON     |        22 |      0.227 | 0.134 |    0.136 |        0.227 |            0.227 |              0.000 |           0.773 |
+| JSON Engineered RAG | Parsed JSON     |        22 |      0.864 | 0.495 |    0.674 |        0.864 |            0.864 |              0.000 |           0.136 |
+
+## JSON Experiment Interpretation
+
+The JSON experiment shows that parsed JSON is not automatically better than TXT. The simple JSON Baseline performs worse than the TXT Baseline because JSON-aware chunks contain more layout-related and structural information.
+
+However, when JSON is paired with engineered retrieval, the result improves strongly. JSON Engineered RAG achieves the best Hit Rate@5 and Recall@5 in this project. This suggests that parsed JSON can be useful when the retrieval system knows how to use metadata such as year, month, page location, and element type.
+
+JSON Engineered RAG has a lower MRR than TXT Engineered RAG, which means the correct file is often retrieved within Top-5 but not always ranked first. This is still useful for RAG because the generator can use Top-5 evidence.
+
+The hallucination rate remains zero across all systems because the generator follows a conservative evidence-first strategy: it answers only when the retrieved evidence contains a gold source document; otherwise, it returns `INSUFFICIENT_CONTEXT`.
 
 ## Reproducibility
 
 Run the following commands from the project root.
+
+Activate the virtual environment:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
@@ -202,51 +451,87 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 $env:PYTHONPATH="src"
 ```
 
-Prepare data:
+Prepare TXT data:
 
 ```powershell
 python scripts\prepare_data.py
 ```
 
-Build chunks:
+Build TXT chunks:
 
 ```powershell
 python scripts\build_chunks.py
 ```
 
-Evaluate Baseline Retriever:
+Evaluate TXT Baseline Retriever:
 
 ```powershell
 python scripts\evaluate_baseline_retriever.py
 ```
 
-Evaluate Engineered Retriever:
+Evaluate TXT Engineered Retriever:
 
 ```powershell
 python scripts\evaluate_engineered_retriever.py
 ```
 
-Compare retrievers:
+Compare TXT retrievers:
 
 ```powershell
 python scripts\compare_retrievers.py
 ```
 
-Evaluate generators:
+Evaluate TXT generators:
 
 ```powershell
 python scripts\evaluate_generators.py
 ```
 
-Create final results:
+Create TXT final results:
 
 ```powershell
 python scripts\make_final_results.py
 ```
 
+Download JSON data:
+
+```powershell
+python scripts\download_json_data.py
+```
+
+Inspect JSON structure:
+
+```powershell
+python scripts\inspect_json_structure.py
+```
+
+Build JSON chunks:
+
+```powershell
+python scripts\build_json_chunks.py
+```
+
+Evaluate JSON retrievers:
+
+```powershell
+python scripts\evaluate_json_retrievers.py
+```
+
+Evaluate JSON generators:
+
+```powershell
+python scripts\evaluate_json_generators.py
+```
+
+Create TXT vs JSON comparison:
+
+```powershell
+python scripts\make_txt_json_comparison.py
+```
+
 ## Output Files
 
-Important output files:
+Important TXT output files:
 
 ```text
 results/baseline_retriever_summary.csv
@@ -259,12 +544,42 @@ docs/generator_comparison.md
 docs/final_rag_comparison.md
 ```
 
+Important JSON extension output files:
+
+```text
+results/json_baseline_retriever_summary.csv
+results/json_engineered_retriever_summary.csv
+results/json_generator_comparison.csv
+results/txt_json_rag_comparison.csv
+docs/json_generator_comparison.md
+docs/txt_json_rag_comparison.md
+```
+
+## GitHub Submission Notes
+
+Large generated data files are not committed to GitHub.
+
+Ignored files include:
+
+```text
+data/raw/
+data/processed/
+.venv/
+officeqa/
+results/*_details.csv
+README_broken_backup.md
+```
+
+The repository keeps the source code, documentation, and summary result files so the experiment can be reviewed and reproduced.
+
 ## Future Work
 
 Possible extensions:
 
-1. Compare TXT files against JSON files to test whether structured source representation improves retrieval.
-2. Add a real LLM-based answer generator.
-3. Add table-aware chunking for Treasury Bulletin tables.
-4. Add reranking after initial retrieval.
-5. Add unit tests for the metadata parser, retriever, and metrics modules.
+1. Add a real LLM-based answer generator.
+2. Add table-aware chunking for Treasury Bulletin tables.
+3. Add reranking after initial retrieval.
+4. Add unit tests for the metadata parser, retriever, and metrics modules.
+5. Compare additional embedding models beyond TF-IDF.
+
+

@@ -1,0 +1,3 @@
+system,total_questions,groundedness,factual_accuracy,hallucination_rate,abstention_rate
+JSON Baseline RAG,22.0,0.22727272727272727,0.22727272727272727,0.0,0.7727272727272727
+JSON Engineered RAG,22.0,0.8636363636363636,0.8636363636363636,0.0,0.13636363636363635
