@@ -165,6 +165,9 @@ The TXT chunks are generated as:
 data/processed/chunks_baseline_2010_2025.csv
 ```
 
+## Vector Index Design
+
+Instead of using an external vector database such as ChromaDB or FAISS, this project uses an in-memory TF-IDF sparse vector index for retrieval. This keeps the experiment lightweight while still supporting vector-based similarity search and controlled Baseline vs Engineered comparison.
 ## Baseline RAG
 
 The Baseline RAG system uses a simple retrieval setup.
@@ -554,4 +557,5 @@ results/txt_json_rag_comparison.csv
 docs/json_generator_comparison.md
 docs/txt_json_rag_comparison.md
 ```
+
 
